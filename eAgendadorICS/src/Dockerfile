@@ -1,25 +1,23 @@
-# Etapa 1: Build da aplicação
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+USER app
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+COPY ["src.csproj", "./"]
+RUN dotnet restore "./src.csproj"
+COPY . .
+WORKDIR "/src"
+RUN dotnet build "./src.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./src.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
 WORKDIR /app
-
-# Copia arquivos do projeto e restaura dependências
-COPY *.csproj ./
-RUN dotnet restore
-
-# Copia tudo e publica em modo release
-COPY . ./
-RUN dotnet publish -c Release -o /app/publish
-
-# Etapa 2: Runtime da aplicação
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
-WORKDIR /app
-
-# Copia a build gerada na etapa anterior
-COPY --from=build /app/publish .
-
-# Expor portas 80 (HTTP) e 443 (HTTPS)
-EXPOSE 80
-EXPOSE 443
-
-# Inicia a aplicação
-ENTRYPOINT ["dotnet", "AgendaICS.dll"]
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "src.dll"]
