@@ -25,5 +25,5 @@ namespace src.Models
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "O lembrete deve ser de no mínimo 1 minuto.")]
         public int MinutosLembrete { get; set; }
-    }
+    }    
 }

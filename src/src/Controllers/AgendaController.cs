@@ -98,5 +98,32 @@ namespace src.Controllers
             return File(bytes, "text/calendar", "agendamento_com_lembrete.ics");
         }
 
+        [HttpPost("gerar-link-google-agenda")]
+        public IActionResult GerarLinkGoogleAgenda([FromBody] AgendamentoRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // Escapar os dados para uso na URL
+            var titulo = Uri.EscapeDataString(request.Titulo ?? string.Empty);
+            var descricao = Uri.EscapeDataString(request.Descricao ?? string.Empty);
+            var local = Uri.EscapeDataString(request.Local ?? string.Empty);
+
+            // Converter para UTC no formato exigido pelo Google Calendar
+            var inicioUtc = request.Inicio.ToUniversalTime().ToString("yyyyMMdd'T'HHmmss'Z'");
+            var fimUtc = request.Fim.ToUniversalTime().ToString("yyyyMMdd'T'HHmmss'Z'");
+
+            if (inicioUtc == null || fimUtc == null)
+                return BadRequest("Datas inválidas");
+
+            // Montar a URL do Google Calendar
+            var googleCalendarUrl = $"https://calendar.google.com/calendar/render?action=TEMPLATE" +
+                                    $"&text={titulo}" +
+                                    $"&dates={inicioUtc}/{fimUtc}" +
+                                    $"&details={descricao}" +
+                                    $"&location={local}";
+
+            return Ok(new { link = googleCalendarUrl });
+        }
     }
 }
